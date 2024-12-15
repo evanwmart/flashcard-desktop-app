@@ -82,6 +82,10 @@ pub fn initialize_database() -> Result<Connection> {
 
 pub fn insert_tag(conn: &Connection, name: &str) -> Result<usize> {
     conn.execute("INSERT INTO tags (name) VALUES (?1);", &[&name])
+        .map_err(|e| {
+            println!("Error inserting tag: {:?}", e);
+            e
+        })
 }
 
 pub fn associate_tag(conn: &Connection, flashcard_id: i64, tag_id: i64) -> Result<usize> {
@@ -115,4 +119,44 @@ pub fn insert_mindmap_node(
          VALUES (?1, ?2, ?3);",
         params![flashcard_id, x_position, y_position],
     )
+}
+
+// Tests for the `db` module
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rusqlite::Result;
+
+    #[test]
+    fn test_database_initialization() -> Result<()> {
+        let conn = initialize_database()?;
+        let mut stmt = conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='decks';")?;
+        let exists: Option<String> = stmt.query_row([], |row| row.get(0)).ok();
+        assert_eq!(exists, Some("decks".to_string()));
+        Ok(())
+    }
+
+
+    #[test]
+    fn test_insert_tag() -> Result<()> {
+        // Initialize the database
+        let conn = initialize_database()?;
+
+        // Clear the `tags` table before running the test
+        conn.execute("DELETE FROM tags;", []).expect("Failed to clear tags table");
+
+        // Insert the tag
+        let result = insert_tag(&conn, "Test Tag");
+        if let Err(e) = &result {
+            println!("Error in unit test insert_tag: {:?}", e); // Debugging output
+        }
+        assert!(result.is_ok());
+
+        // Verify the tag was inserted
+        let mut stmt = conn.prepare("SELECT COUNT(*) FROM tags WHERE name = ?1")?;
+        let count: i64 = stmt.query_row(["Test Tag"], |row| row.get(0))?;
+        assert_eq!(count, 1);
+
+        Ok(())
+    }
 }

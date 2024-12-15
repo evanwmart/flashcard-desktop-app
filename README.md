@@ -13,20 +13,20 @@
   - [X] Linux
   - [ ] MacOS TODO @ later date.
 
-- **Day 3: SQLite Integration**
-  - [ ] Add SQLite as the persistence layer.
-  - [ ] Create a database schema for decks and flashcards:
-    - [ ] Tables for decks (`id`, `name`, `created_at`).
-    - [ ] Tables for flashcards (`id`, `deck_id`, `front_md`, `back_md`, `created_at`).
-  - [ ] Write test scripts to validate SQLite schema creation.
+- **SQLite Integration**
+  - [X] Add SQLite as the persistence layer.
+  - [X] Create a database schema for decks and flashcards:
+    - [X] Tables for decks (`id`, `name`, `created_at`).
+    - [X] Tables for flashcards (`id`, `deck_id`, `front_md`, `back_md`, `created_at`).
+  - [X] Write test scripts to validate SQLite schema creation.
 
-- **Day 4: Flashcard CRUD Operations**
+- **Flashcard CRUD Operations**
   - [ ] Implement backend logic for creating, reading, updating, and deleting flashcards and decks.
   - [ ] Test:
     - [ ] Add a deck and verify it appears in the database.
     - [ ] Add flashcards to a deck and verify entries in SQLite.
 
-- **Day 5–6: Basic UI with Markdown**
+- **Basic UI with Markdown**
   - [ ] Create UI elements for:
     - [ ] Deck list (view, create, delete decks).
     - [ ] Flashcard viewer (basic card flipping).
@@ -35,7 +35,7 @@
     - [ ] Render Markdown content on flashcards.
     - [ ] Flip a card and verify both sides render correctly.
 
-- **Day 7: Testing and Debugging**
+- **Testing and Debugging**
   - [ ] Test SQLite data persistence after app restarts.
   - [ ] Verify basic CRUD operations and Markdown rendering in the UI.
 
@@ -45,7 +45,7 @@
 ### **Goal**: Study features, search/filter, and import/export functionality.
 
 ### **Week 2: Spaced Repetition and Session Basics**
-- **Day 1–2: Spaced-Repetition Algorithm**
+- **Spaced-Repetition Algorithm**
   - [ ] Integrate a spaced-repetition algorithm.
   - [ ] Use SQLite to track:
     - [ ] Review dates (`next_review_at`).
@@ -54,7 +54,7 @@
     - [ ] Simulate study sessions with spaced-repetition calculations.
     - [ ] Verify updates to `next_review_at` in SQLite.
 
-- **Day 3–4: Study Session UI**
+- **Study Session UI**
   - [ ] Create a study session interface:
     - [ ] Present flashcards based on `next_review_at`.
     - [ ] Allow ranking of answers (easy, hard, incorrect).
@@ -62,7 +62,7 @@
     - [ ] Review flashcards in a session.
     - [ ] Verify user rankings adjust scheduling in SQLite.
 
-- **Day 5–6: Search and Filter**
+- **Search and Filter**
   - [ ] Add search/filter UI:
     - [ ] Filter by tags, difficulty, or deck.
     - [ ] Use SQLite queries for efficient filtering.
@@ -70,7 +70,7 @@
     - [ ] Create multiple decks and flashcards.
     - [ ] Verify filtered results match the query criteria.
 
-- **Day 7: Debugging and Testing**
+- **Debugging and Testing**
   - [ ] Test the full workflow:
     - [ ] Create a deck.
     - [ ] Add flashcards.
@@ -80,31 +80,31 @@
 ---
 
 ### **Week 3: Import/Export and Visual Enhancements**
-- **Day 1–2: Import/Export Decks**
+- **Import/Export Decks**
   - [ ] Implement import/export in JSON and custom `.deck` format.
   - [ ] Write parser and generator for deck files.
   - [ ] Test:
     - [ ] Export a deck, re-import it, and verify data consistency.
 
-- **Day 3–4: Dark Mode**
+- **Dark Mode**
   - [ ] Add a light/dark theme toggle.
   - [ ] Test:
     - [ ] Verify proper rendering in both themes.
 
-- **Day 5–6: Markdown Enhancements**
+- **Markdown Enhancements**
   - [ ] Add support for extended Markdown features:
     - [ ] Headers, bold/italic text, code blocks, and lists.
   - [ ] Test:
     - [ ] Render various Markdown formats on flashcards.
 
-- **Day 7: Testing and Debugging**
+- **Testing and Debugging**
   - [ ] Test deck import/export workflows.
   - [ ] Verify UI consistency in both themes.
 
 ---
 
 ### **Week 4: Session Summaries and Polish**
-- **Day 1–2: Session Summaries**
+- **Session Summaries**
   - [ ] Implement post-session summaries showing:
     - [ ] Cards reviewed.
     - [ ] Accuracy percentages.
@@ -112,7 +112,7 @@
   - [ ] Test:
     - [ ] Complete study sessions and verify summary data.
 
-- **Day 3–4: UI Improvements**
+- **UI Improvements**
   - [ ] Refine UI for:
     - [ ] Deck list.
     - [ ] Flashcard viewer.
@@ -120,11 +120,11 @@
   - [ ] Test:
     - [ ] Verify smooth navigation and responsiveness.
 
-- **Day 5–6: Testing and Debugging**
+- **Testing and Debugging**
   - [ ] Conduct full end-to-end testing of the enhanced MVP.
   - [ ] Verify SQLite data integrity for all workflows.
 
-- **Day 7: Buffer/Additional Testing**
+- **Buffer/Additional Testing**
   - [ ] Address any bugs or issues found during testing.
 
 ---
@@ -133,47 +133,47 @@
 ### **Goal**: Advanced features and app polish.
 
 ### **Week 5: Advanced Flashcard Features**
-- **Day 1–2: Hint System**
+- **Hint System**
   - [ ] Add support for optional hints on flashcards.
   - [ ] Test:
     - [ ] Add hints to flashcards and display them during study sessions.
 
-- **Day 3–4: Interconnected Flashcards**
+- **Interconnected Flashcards**
   - [ ] Implement links between related flashcards using SQLite relations.
   - [ ] Test:
     - [ ] Create linked flashcards and navigate between them in the UI.
 
-- **Day 5–6: Achievements System**
+- **Achievements System**
   - [ ] Add basic achievements:
     - [ ] Study streaks.
     - [ ] Deck completion milestones.
   - [ ] Test:
     - [ ] Trigger achievements under defined conditions.
 
-- **Day 7: Testing and Debugging**
+- **Testing and Debugging**
   - [ ] Test all new features (hints, links, achievements).
 
 ---
 
 ### **Week 6: Final Features and Polish**
-- **Day 1–2: Image Support**
+- **Image Support**
   - [ ] Add Markdown image rendering (`![alt text](url)`).
   - [ ] Test:
     - [ ] Create flashcards with images and verify rendering.
 
-- **Day 3–4: Progress Tracking and Knowledge Mapping**
+- **Progress Tracking and Knowledge Mapping**
   - [ ] Implement analytics using SQLite queries:
     - [ ] Accuracy trends.
     - [ ] Knowledge visualization (e.g., mastery graphs).
   - [ ] Test:
     - [ ] Complete study sessions and verify analytics.
 
-- **Day 5–6: Final Debugging and Packaging**
+- **Final Debugging and Packaging**
   - [ ] Conduct extensive cross-platform testing.
   - [ ] Fix bugs and optimize performance.
   - [ ] Package the app for distribution using `cargo-bundle` or `cargo-deb`.
 
-- **Day 7: Final Delivery**
+- **Final Delivery**
   - [ ] Deliver the completed app with:
     - [ ] Markdown-rendered flashcards.
     - [ ] SQLite-backed storage.
