@@ -1,0 +1,8 @@
+[package]
+name = "flashcard-desktop-app"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+iced = { version = "0.13.1", features = ["wgpu"] }
+rusqlite = { version = "0.32.1", features = ["bundled"] }
