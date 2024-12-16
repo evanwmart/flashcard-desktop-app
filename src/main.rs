@@ -12,7 +12,7 @@ enum Message {
 }
 
 pub fn main() -> Result {
-    initialize_database().expect("Failed to initialize database");
+    initialize_database(false).expect("Failed to initialize database");
     iced::run("Flashcard Desktop App", update, view)
 }
 
