@@ -21,10 +21,10 @@
   - [X] Write test scripts to validate SQLite schema creation.
 
 - **Flashcard CRUD Operations**
-  - [ ] Implement backend logic for creating, reading, updating, and deleting flashcards and decks.
-  - [ ] Test:
-    - [ ] Add a deck and verify it appears in the database.
-    - [ ] Add flashcards to a deck and verify entries in SQLite.
+  - [X] Implement backend logic for creating, reading, updating, and deleting flashcards and decks.
+  - [X] Test:
+    - [X] Add a deck and verify it appears in the database.
+    - [X] Add flashcards to a deck and verify entries in SQLite.
 
 - **Basic UI with Markdown**
   - [ ] Create UI elements for:
