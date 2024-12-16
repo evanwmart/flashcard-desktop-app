@@ -8,5 +8,6 @@ name = "flashcard_desktop_app"
 path = "src/lib.rs"
 
 [dependencies]
-iced = { version = "0.13.1", features = ["wgpu"] }
+iced = { version = "0.13.1", features = ["wgpu", "async-std", "tokio"] }
+pulldown-cmark = "0.12.2"
 rusqlite = { version = "0.32.1", features = ["bundled"] }
