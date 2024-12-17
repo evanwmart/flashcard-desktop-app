@@ -13,19 +13,19 @@ fn main() -> iced::Result {
 
     iced::application("Flashcard Desktop App", update, view)
         .theme(|_| Theme::default())
-        .run_with(
-            || {
-                let state = App {
-                    deck_view: DeckView::new(),
-                };
-                (state, Task::none())
-            }
-        )
+        .run_with(|| {
+            let state = App {
+                deck_view: DeckView::new(),
+            };
+            (state, DeckView::fetch_decks_on_start()) // Fetch decks on start
+        })
 }
 
-fn update(state: &mut App, message: Message) {
-    let _task = state.deck_view.update(message);
+fn update(state: &mut App, message: Message) -> Task<Message> {
+    // Forward the message to the DeckView and return the resulting Task
+    state.deck_view.update(message)
 }
+
 
 fn view(state: &App) -> Element<Message> {
     Column::new()
