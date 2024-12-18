@@ -1,181 +1,150 @@
-# flashcard-desktop-app
 
 
-# Development Timeline: Flashcard App
+# **Flashcard Desktop App**
 
 ## **Week 1: Initial MVP**
 ### **Goal**: Core flashcard functionality with Markdown rendering and SQLite setup.
 
 - **Project Setup**
-  - [X] Initialize the Rust project with the Iced framework.
-  - Set up cross-platform build configuration.
-  - [X] Windows
-  - [X] Linux
-  - [ ] MacOS TODO @ later date.
+  - [X] Initialize the Rust project with Tauri and Leptos.
+  - [ ] Configure Tauri for cross-platform builds.
+    - [ ] Windows
+    - [X] Linux
+    - [ ] MacOS (To be addressed later)
+  - [ ] Set up frontend-reactive components in Leptos.
 
 - **SQLite Integration**
-  - [X] Add SQLite as the persistence layer.
-  - [X] Create a database schema for decks and flashcards:
-    - [X] Tables for decks (`id`, `name`, `created_at`).
-    - [X] Tables for flashcards (`id`, `deck_id`, `front_md`, `back_md`, `created_at`).
-  - [X] Write test scripts to validate SQLite schema creation.
+  - [ ] Use `sqlx` for async SQLite integration.
+  - [ ] Define database schema for decks and flashcards:
+    - Tables:
+      - `decks` (`id`, `name`, `created_at`).
+      - `flashcards` (`id`, `deck_id`, `front_md`, `back_md`, `created_at`).
+  - [ ] Write migration scripts and validate schema.
 
 - **Flashcard CRUD Operations**
-  - [X] Implement backend logic for creating, reading, updating, and deleting flashcards and decks.
-  - [X] Test:
-    - [X] Add a deck and verify it appears in the database.
-    - [X] Add flashcards to a deck and verify entries in SQLite.
+  - [ ] Backend logic for creating, reading, updating, and deleting decks and flashcards.
+  - [ ] Connect frontend (Leptos) to SQLite backend using Tauri commands.
+  - [ ] Test:
+    - [ ] Create decks and flashcards.
+    - [ ] Validate data persistence in SQLite.
 
 - **Basic UI with Markdown**
-  - [ ] Create UI elements for:
-    - [ ] Deck list (view, create, delete decks).
-    - [ ] Flashcard viewer (basic card flipping).
-  - [ ] Integrate Markdown rendering for front/back content using a library like `pulldown-cmark`.
+  - [ ] Develop UI components in Leptos for:
+    - [ ] Deck list (create, view, delete).
+    - [ ] Flashcard viewer with card-flipping.
+      - [ ] Display Markdown content for front and back using a library like `comrak`.
+      - [ ] Add flip animations for flashcards.
   - [ ] Test:
-    - [ ] Render Markdown content on flashcards.
-    - [ ] Flip a card and verify both sides render correctly.
+    - [ ] Render Markdown on both sides of a card.
 
 - **Testing and Debugging**
-  - [ ] Test SQLite data persistence after app restarts.
-  - [ ] Verify basic CRUD operations and Markdown rendering in the UI.
+  - [ ] Verify data persistence after app restarts.
+  - [ ] Debug CRUD workflows and UI rendering.
 
 ---
 
-## **Week 2–4: Enhanced MVP**
-### **Goal**: Study features, search/filter, and import/export functionality.
+## **Week 2–3: Study Features and Spaced Repetition**
+### **Goal**: Spaced repetition, study sessions, and search/filter functionality.
 
-### **Week 2: Spaced Repetition and Session Basics**
-- **Spaced-Repetition Algorithm**
-  - [ ] Integrate a spaced-repetition algorithm.
-  - [ ] Use SQLite to track:
-    - [ ] Review dates (`next_review_at`).
-    - [ ] Success metrics (e.g., `ease_factor`, `interval`).
+### **Week 2: Spaced Repetition**
+- **Spaced Repetition Algorithm**
+  - [ ] Integrate a spaced-repetition algorithm (e.g., SM-2).
+  - [ ] Use SQLite to store and update:
+    - `next_review_at`
+    - `ease_factor`, `interval`, and success metrics.
   - [ ] Test:
-    - [ ] Simulate study sessions with spaced-repetition calculations.
-    - [ ] Verify updates to `next_review_at` in SQLite.
+    - Simulate flashcard reviews and verify updates to `next_review_at`.
 
 - **Study Session UI**
   - [ ] Create a study session interface:
-    - [ ] Present flashcards based on `next_review_at`.
-    - [ ] Allow ranking of answers (easy, hard, incorrect).
+    - [ ] Display flashcards based on `next_review_at`.
+    - [ ] Allow rating answers (easy, hard, incorrect).
   - [ ] Test:
-    - [ ] Review flashcards in a session.
-    - [ ] Verify user rankings adjust scheduling in SQLite.
+    - Verify user interactions update scheduling in the backend.
 
-- **Search and Filter**
-  - [ ] Add search/filter UI:
-    - [ ] Filter by tags, difficulty, or deck.
-    - [ ] Use SQLite queries for efficient filtering.
+### **Week 3: Search, Filter, and Tagging**
+- **Search/Filter UI**
+  - [ ] Add UI filters:
+    - By tags, difficulty, or deck.
+  - [ ] Optimize search using SQLite queries.
   - [ ] Test:
-    - [ ] Create multiple decks and flashcards.
-    - [ ] Verify filtered results match the query criteria.
+    - Validate filtered flashcards and decks.
 
-- **Debugging and Testing**
-  - [ ] Test the full workflow:
-    - [ ] Create a deck.
-    - [ ] Add flashcards.
-    - [ ] Conduct a study session.
-    - [ ] Verify spaced-repetition scheduling.
+- **Tagging System**
+  - [ ] Add support for tagging flashcards.
+  - [ ] Test:
+    - Ensure tags are stored and queried properly.
 
 ---
 
-### **Week 3: Import/Export and Visual Enhancements**
+## **Week 4: Import/Export and UI Enhancements**
+### **Goal**: Smooth workflows, JSON import/export, and improved UI.
+
 - **Import/Export Decks**
-  - [ ] Implement import/export in JSON and custom `.deck` format.
-  - [ ] Write parser and generator for deck files.
+  - [ ] Support JSON and custom `.deck` format.
   - [ ] Test:
-    - [ ] Export a deck, re-import it, and verify data consistency.
+    - Export and re-import decks for consistency.
 
 - **Dark Mode**
-  - [ ] Add a light/dark theme toggle.
+  - [ ] Add theme toggle for light/dark mode.
   - [ ] Test:
-    - [ ] Verify proper rendering in both themes.
+    - Verify UI elements render correctly in both themes.
 
 - **Markdown Enhancements**
-  - [ ] Add support for extended Markdown features:
-    - [ ] Headers, bold/italic text, code blocks, and lists.
+  - [ ] Support extended Markdown features:
+    - Headers, bold/italic, lists, and code blocks.
   - [ ] Test:
-    - [ ] Render various Markdown formats on flashcards.
+    - Validate Markdown rendering for various content types.
 
-- **Testing and Debugging**
-  - [ ] Test deck import/export workflows.
-  - [ ] Verify UI consistency in both themes.
+- **UI Polish**
+  - [ ] Refine animations for deck/flashcard interactions.
+  - [ ] Improve responsiveness and accessibility.
 
 ---
 
-### **Week 4: Session Summaries and Polish**
+## **Month 2: Full MVP and Polish**
+### **Goal**: Session summaries, analytics, and advanced features.
+
+### **Week 5: Advanced Features**
 - **Session Summaries**
-  - [ ] Implement post-session summaries showing:
-    - [ ] Cards reviewed.
-    - [ ] Accuracy percentages.
-    - [ ] Next review schedule.
+  - [ ] Post-study summaries showing:
+    - Cards reviewed, accuracy, and next reviews.
   - [ ] Test:
-    - [ ] Complete study sessions and verify summary data.
+    - Verify session metrics.
 
-- **UI Improvements**
-  - [ ] Refine UI for:
-    - [ ] Deck list.
-    - [ ] Flashcard viewer.
-    - [ ] Study session interface.
+- **Hints and Interconnected Flashcards**
+  - [ ] Add optional hints to flashcards.
+  - [ ] Implement linking between flashcards for related content.
   - [ ] Test:
-    - [ ] Verify smooth navigation and responsiveness.
+    - Ensure seamless navigation between linked flashcards.
 
-- **Testing and Debugging**
-  - [ ] Conduct full end-to-end testing of the enhanced MVP.
-  - [ ] Verify SQLite data integrity for all workflows.
-
-- **Buffer/Additional Testing**
-  - [ ] Address any bugs or issues found during testing.
-
----
-
-## **Month 2: Full MVP**
-### **Goal**: Advanced features and app polish.
-
-### **Week 5: Advanced Flashcard Features**
-- **Hint System**
-  - [ ] Add support for optional hints on flashcards.
+- **Achievements**
+  - [ ] Introduce achievements:
+    - Study streaks and deck completions.
   - [ ] Test:
-    - [ ] Add hints to flashcards and display them during study sessions.
+    - Validate triggers for achievements.
 
-- **Interconnected Flashcards**
-  - [ ] Implement links between related flashcards using SQLite relations.
-  - [ ] Test:
-    - [ ] Create linked flashcards and navigate between them in the UI.
-
-- **Achievements System**
-  - [ ] Add basic achievements:
-    - [ ] Study streaks.
-    - [ ] Deck completion milestones.
-  - [ ] Test:
-    - [ ] Trigger achievements under defined conditions.
-
-- **Testing and Debugging**
-  - [ ] Test all new features (hints, links, achievements).
-
----
-
-### **Week 6: Final Features and Polish**
+### **Week 6: Final Features and Packaging**
 - **Image Support**
-  - [ ] Add Markdown image rendering (`![alt text](url)`).
+  - [ ] Render images in Markdown (`![alt](url)`).
   - [ ] Test:
-    - [ ] Create flashcards with images and verify rendering.
+    - Verify images display properly.
 
-- **Progress Tracking and Knowledge Mapping**
-  - [ ] Implement analytics using SQLite queries:
-    - [ ] Accuracy trends.
-    - [ ] Knowledge visualization (e.g., mastery graphs).
+- **Progress Analytics**
+  - [ ] Track study performance:
+    - Accuracy trends and card mastery stats.
+  - [ ] Add basic visualization (e.g., graphs).
+
+- **Cross-Platform Packaging**
+  - [ ] Package app with Tauri for:
+    - Windows, Linux, and MacOS.
   - [ ] Test:
-    - [ ] Complete study sessions and verify analytics.
+    - Ensure full functionality across platforms.
 
-- **Final Debugging and Packaging**
-  - [ ] Conduct extensive cross-platform testing.
-  - [ ] Fix bugs and optimize performance.
-  - [ ] Package the app for distribution using `cargo-bundle` or `cargo-deb`.
+- **Final Debugging and Polish**
+  - [ ] Conduct end-to-end testing.
+  - [ ] Address performance optimizations and bugs.
 
-- **Final Delivery**
-  - [ ] Deliver the completed app with:
-    - [ ] Markdown-rendered flashcards.
-    - [ ] SQLite-backed storage.
-    - [ ] Advanced study features.
-    - [ ] Fully functional UI with dark mode and cross-platform compatibility.
+- **Delivery**
+  - [ ] Finalize app with Markdown-rendered flashcards, SQLite persistence, and polished UI.
+
