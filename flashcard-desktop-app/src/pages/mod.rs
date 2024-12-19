@@ -1,6 +1,5 @@
-pub mod analytics;
-pub mod deck_view;
-pub mod editor;
-pub mod import;
-pub mod settings;
-pub mod study;
+pub mod decks_page;
+pub mod deck_page;
+pub mod study_page;
+pub mod analytics_page;
+pub mod settings_page;
