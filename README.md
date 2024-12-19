@@ -18,7 +18,7 @@
   - [ ] Define database schema for decks and flashcards:
     - Tables:
       - `decks` (`id`, `name`, `created_at`).
-      - `flashcards` (`id`, `deck_id`, `front_md`, `back_md`, `created_at`).
+      - `flashcards` (`id`, `deck_id`, `front_md`, `back_md`, `tags`, `created_at`, `last_reviewed`, `ease_factor`, `interval`, `next_review`).
   - [ ] Write migration scripts and validate schema.
 
 - **Flashcard CRUD Operations**
