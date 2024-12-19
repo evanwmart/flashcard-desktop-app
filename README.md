@@ -11,7 +11,7 @@
     - [ ] Windows
     - [X] Linux
     - [ ] MacOS (To be addressed later)
-  - [ ] Set up frontend-reactive components in Leptos.
+  - [X] Set up frontend-reactive components in Leptos.
 
 - **SQLite Integration**
   - [ ] Use `sqlx` for async SQLite integration.
