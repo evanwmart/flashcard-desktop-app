@@ -1,72 +1,51 @@
-use rusqlite::{Connection, Result};
+use sqlx::sqlite::SqlitePool;
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
-fn initialize_database() -> Result<()> {
-    let conn = Connection::open("flashcards.db")?;
+#[derive(Clone)]
+pub struct Database {
+    pub pool: Arc<Mutex<SqlitePool>>,
+}
 
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS decks (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );",
-        [],
-    )?;
+impl Database {
+    pub async fn new(database_url: &str) -> Self {
+        let pool = SqlitePool::connect(database_url)
+            .await
+            .expect("Failed to connect to the database");
 
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS flashcards (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            deck_id INTEGER NOT NULL,
-            front_md TEXT NOT NULL,
-            back_md TEXT NOT NULL,
-            tags TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            last_reviewed TIMESTAMP,
-            ease_factor REAL DEFAULT 2.5,
-            interval INTEGER DEFAULT 1,
-            next_review TIMESTAMP,
-            FOREIGN KEY (deck_id) REFERENCES decks (id) ON DELETE CASCADE
-        );",
-        [],
-    )?;
+        // Apply schema or migrations
+        sqlx::query(include_str!("../migrations/schema.sql"))
+            .execute(&pool)
+            .await
+            .expect("Failed to initialize database schema");
 
+        Self {
+            pool: Arc::new(Mutex::new(pool)),
+        }
+    }
+}
+
+// Example command to interact with the database
+#[tauri::command]
+async fn create_deck(database: tauri::State<'_, Database>, name: String) -> Result<(), String> {
+    let pool = database.pool.lock().await;
+    sqlx::query("INSERT INTO decks (name) VALUES (?)")
+        .bind(name)
+        .execute(&*pool)
+        .await
+        .map_err(|e| e.to_string())?;
     Ok(())
-}
-
-#[tauri::command]
-fn fetch_decks() -> Result<Vec<(i64, String, String)>, String> {
-    let conn = Connection::open("flashcards.db").map_err(|e| e.to_string())?;
-    let mut stmt = conn
-        .prepare("SELECT id, name, created_at FROM decks")
-        .map_err(|e| e.to_string())?;
-    
-    let decks_iter = stmt
-        .query_map([], |row| {
-            Ok((row.get(0)?, row.get(1)?, row.get(2)?))
-        })
-        .map_err(|e| e.to_string())?;
-    
-    let decks = decks_iter.collect::<Result<Vec<_>, _>>().map_err(|e| e.to_string())?;
-    Ok(decks)
-}
-
-#[tauri::command]
-fn insert_deck(name: String) -> Result<i64, String> {
-    let conn = Connection::open("flashcards.db").map_err(|e| e.to_string())?;
-    conn.execute(
-        "INSERT INTO decks (name, created_at) VALUES (?1, CURRENT_TIMESTAMP)",
-        &[&name],
-    )
-    .map_err(|e| e.to_string())?;
-    
-    Ok(conn.last_insert_rowid())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let _ = initialize_database();
+    let database = tokio::runtime::Runtime::new()
+        .unwrap()
+        .block_on(Database::new("sqlite://flashcards.db"));
 
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![fetch_decks, insert_deck])
+        .manage(database) // Share database state with commands
+        .invoke_handler(tauri::generate_handler![create_deck])
         .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .expect("error while running Tauri application");
 }
