@@ -8,3 +8,7 @@ ignore = ["./src-tauri"]
 port = 1420
 open = false
 ws_protocol = "ws"
+
+[[copy]]
+source = "src/assets/icons"
+target = "assets/icons"
