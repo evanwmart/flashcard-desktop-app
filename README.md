@@ -17,8 +17,11 @@
   - [ ] Use `sqlx` for async SQLite integration.
   - [ ] Define database schema for decks and flashcards:
     - Tables:
-      - `decks` (`id`, `name`, `created_at`).
-      - `flashcards` (`id`, `deck_id`, `front_md`, `back_md`, `created_at`).
+      - `decks`
+      - `flashcards`
+      - `buckets`
+      - `settings`
+      ... any oither?
   - [ ] Write migration scripts and validate schema.
 
 - **Flashcard CRUD Operations**
