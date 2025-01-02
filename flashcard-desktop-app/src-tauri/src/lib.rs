@@ -1,151 +1,357 @@
-use tokio_rusqlite::{Connection, Result};
-use tokio::sync::OnceCell;
-use rusqlite::Error as RusqliteError;
+mod db;
+
+/*********************************************
+ * BUCKETS
+ *********************************************/
+#[tauri::command]
+async fn create_bucket_command(name: String, interval_days: f64) -> Result<(), String> {
+    db::buckets::create_bucket(name, interval_days)
+        .await
+        .map_err(|e| e.to_string())
+}
 
 #[tauri::command]
-async fn greet(name: &str) -> std::result::Result<String, String> {
-    Ok(format!("Hello, {}! You've been greeted from Rust!", name))
+async fn read_buckets_command() -> Result<Vec<(i32, String, f64)>, String> {
+    db::buckets::read_buckets()
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-async fn fetch_flashcards() -> std::result::Result<Vec<(i32, String, String)>, String> {
-    if let Some(conn) = DB_CONNECTION.get() {
-        let flashcards = conn
-            .call(|conn| {
-                let mut stmt = conn.prepare(
-                    "SELECT id, html_front, html_back FROM flashcards WHERE is_unlocked = 1"
-                )?;
-                let rows = stmt
-                    .query_map([], |row| {
-                        Ok((row.get(0)?, row.get(1)?, row.get(2)?))
-                    })?
-                    .collect::<std::result::Result<Vec<_>, RusqliteError>>()?;
-                Ok(rows)
-            })
-            .await;
-
-        match flashcards {
-            Ok(data) => Ok(data),
-            Err(_) => Err("Failed to fetch flashcards.".to_string()),
-        }
-    } else {
-        Err("Database connection is not available.".to_string())
-    }
+async fn update_bucket_command(id: i32, name: Option<String>, interval_days: Option<f64>) -> Result<(), String> {
+    db::buckets::update_bucket(id, name, interval_days)
+        .await
+        .map_err(|e| e.to_string())
 }
 
-static DB_CONNECTION: OnceCell<Connection> = OnceCell::const_new();
-
-pub async fn init_db() -> Result<()> {
-    let conn = Connection::open("app.db").await?;
-
-    conn.call(|conn| {
-        conn.execute_batch(
-            r#"
-            CREATE TABLE IF NOT EXISTS buckets (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL,
-                interval_days REAL NOT NULL
-            );
-
-            CREATE TABLE IF NOT EXISTS decks (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL,
-                created_date TEXT NOT NULL,
-                style TEXT NULL
-            );
-
-            CREATE TABLE IF NOT EXISTS flashcards (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                deck_id INTEGER NOT NULL,
-                html_front TEXT NOT NULL,
-                html_back TEXT NOT NULL,
-                bucket_id INTEGER NOT NULL,
-                due_date REAL NULL,
-                ease_factor REAL DEFAULT 2.5,
-                priority INTEGER NULL,
-                delay_time REAL NULL,
-                last_reviewed REAL NULL,
-                review_interval REAL DEFAULT 0,
-                topics TEXT NULL,
-                is_unlocked BOOLEAN DEFAULT 0,
-                FOREIGN KEY (deck_id) REFERENCES decks(id),
-                FOREIGN KEY (bucket_id) REFERENCES buckets(id)
-            );
-
-            CREATE TABLE IF NOT EXISTS prerequisites (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                flashcard_id INTEGER NOT NULL,
-                prerequisite_id INTEGER NOT NULL,
-                FOREIGN KEY (flashcard_id) REFERENCES flashcards(id),
-                FOREIGN KEY (prerequisite_id) REFERENCES flashcards(id)
-            );
-
-            CREATE TABLE IF NOT EXISTS settings (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                key TEXT NOT NULL UNIQUE,
-                value TEXT NOT NULL
-            );
-
-            CREATE TABLE IF NOT EXISTS media (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                flashcard_id INTEGER NULL,
-                type TEXT NOT NULL,
-                file_path TEXT NOT NULL,
-                description TEXT NULL,
-                batch_id INTEGER NULL,
-                duration REAL NULL,
-                FOREIGN KEY (flashcard_id) REFERENCES flashcards(id)
-            );
-
-            CREATE TABLE IF NOT EXISTS topics (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL UNIQUE,
-                deck_id INTEGER NOT NULL,
-                FOREIGN KEY (deck_id) REFERENCES decks(id)
-            );
-
-            CREATE TABLE IF NOT EXISTS flashcard_topics (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                flashcard_id INTEGER NOT NULL,
-                topic_id INTEGER NOT NULL,
-                FOREIGN KEY (flashcard_id) REFERENCES flashcards(id),
-                FOREIGN KEY (topic_id) REFERENCES topics(id)
-            );
-
-            CREATE TABLE IF NOT EXISTS sessions (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                deck_id INTEGER NOT NULL,
-                start_time REAL NOT NULL,
-                duration REAL NOT NULL,
-                cards_reviewed INTEGER NOT NULL,
-                cards_improved INTEGER NOT NULL,
-                cards_failed INTEGER NOT NULL DEFAULT 0,
-                looked_at_count INTEGER NOT NULL,
-                FOREIGN KEY (deck_id) REFERENCES decks(id)
-            );
-            "#
-        )?;
-        Ok(())
-    }).await?;
-
-    DB_CONNECTION.set(conn).unwrap();
-
-    Ok(())
+#[tauri::command]
+async fn delete_bucket_command(id: i32) -> Result<(), String> {
+    db::buckets::delete_bucket(id)
+        .await
+        .map_err(|e| e.to_string())
 }
 
+/*********************************************
+ * DECKS
+ *********************************************/
+#[tauri::command]
+async fn create_deck_command(name: String, created_date: String, style: Option<String>) -> Result<(), String> {
+    db::decks::create_deck(name, created_date, style)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn read_decks_command() -> Result<Vec<(i32, String, String, Option<String>)>, String> {
+    db::decks::read_decks()
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn update_deck_command(
+    id: i32,
+    name: Option<String>,
+    created_date: Option<String>,
+    style: Option<String>,
+) -> Result<(), String> {
+    db::decks::update_deck(id, name, created_date, style)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn delete_deck_command(id: i32) -> Result<(), String> {
+    db::decks::delete_deck(id)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/*********************************************
+ * FLASHCARDS
+ *********************************************/
+#[tauri::command]
+async fn create_flashcard_command(
+    deck_id: i32,
+    html_front: String,
+    html_back: String,
+    bucket_id: i32,
+    topics: Option<String>,
+    priority: Option<i32>,
+    delay_time: Option<f64>,
+) -> Result<(), String> {
+    db::flashcards::create_flashcard(deck_id, html_front, html_back, bucket_id, topics, priority, delay_time)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn read_flashcards_command(is_unlocked: bool) -> Result<Vec<(i32, String, String)>, String> {
+    db::flashcards::read_flashcards(is_unlocked)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn update_flashcard_command(
+    id: i32,
+    html_front: Option<String>,
+    html_back: Option<String>,
+    bucket_id: Option<i32>,
+    topics: Option<String>,
+    priority: Option<i32>,
+    delay_time: Option<f64>,
+    is_unlocked: Option<bool>,
+) -> Result<(), String> {
+    db::flashcards::update_flashcard(
+        id,
+        html_front,
+        html_back,
+        bucket_id,
+        topics,
+        priority,
+        delay_time,
+        is_unlocked,
+    )
+    .await
+    .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn delete_flashcard_command(id: i32) -> Result<(), String> {
+    db::flashcards::delete_flashcard(id)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/*********************************************
+ * MEDIA
+ *********************************************/
+#[tauri::command]
+async fn create_media_command(
+    flashcard_id: Option<i32>,
+    media_type: String,
+    file_path: String,
+    description: Option<String>,
+    batch_id: Option<i32>,
+    duration: Option<f64>,
+) -> Result<(), String> {
+    db::media::create_media(flashcard_id, media_type, file_path, description, batch_id, duration)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn read_media_command() -> Result<Vec<(i32, Option<i32>, String, String, Option<String>, Option<i32>, Option<f64>)>, String> {
+    db::media::read_media()
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn update_media_command(
+    id: i32,
+    flashcard_id: Option<i32>,
+    media_type: Option<String>,
+    file_path: Option<String>,
+    description: Option<String>,
+    batch_id: Option<i32>,
+    duration: Option<f64>,
+) -> Result<(), String> {
+    db::media::update_media(
+        id,
+        flashcard_id,
+        media_type,
+        file_path,
+        description,
+        batch_id,
+        duration
+    )
+    .await
+    .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn delete_media_command(id: i32) -> Result<(), String> {
+    db::media::delete_media(id)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/*********************************************
+ * SESSIONS
+ *********************************************/
+#[tauri::command]
+async fn create_session_command(
+    deck_id: i32,
+    start_time: f64,
+    duration: f64,
+    cards_reviewed: i32,
+    cards_improved: i32,
+    cards_failed: i32,
+    looked_at_count: i32,
+) -> Result<(), String> {
+    db::sessions::create_session(deck_id, start_time, duration, cards_reviewed, cards_improved, cards_failed, looked_at_count)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn read_sessions_command() -> Result<Vec<(i32, i32, f64, f64, i32, i32, i32, i32)>, String> {
+    db::sessions::read_sessions()
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn update_session_command(
+    id: i32,
+    duration: Option<f64>,
+    cards_reviewed: Option<i32>,
+    cards_improved: Option<i32>,
+    cards_failed: Option<i32>,
+    looked_at_count: Option<i32>,
+) -> Result<(), String> {
+    db::sessions::update_session(
+        id,
+        duration,
+        cards_reviewed,
+        cards_improved,
+        cards_failed,
+        looked_at_count
+    )
+    .await
+    .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn delete_session_command(id: i32) -> Result<(), String> {
+    db::sessions::delete_session(id)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/*********************************************
+ * SETTINGS
+ *********************************************/
+#[tauri::command]
+async fn create_setting_command(key: String, value: String) -> Result<(), String> {
+    db::settings::create_setting(key, value)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn read_settings_command() -> Result<Vec<(String, String)>, String> {
+    db::settings::read_settings()
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn update_setting_command(key: String, value: String) -> Result<(), String> {
+    db::settings::update_setting(key, value)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn delete_setting_command(key: String) -> Result<(), String> {
+    db::settings::delete_setting(key)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/*********************************************
+ * TOPICS
+ *********************************************/
+#[tauri::command]
+async fn create_topic_command(name: String, deck_id: i32) -> Result<(), String> {
+    db::topics::create_topic(name, deck_id)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn read_topics_command() -> Result<Vec<(i32, String, i32)>, String> {
+    db::topics::read_topics()
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn update_topic_command(id: i32, name: Option<String>, deck_id: Option<i32>) -> Result<(), String> {
+    db::topics::update_topic(id, name, deck_id)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn delete_topic_command(id: i32) -> Result<(), String> {
+    db::topics::delete_topic(id)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/*********************************************
+ * MAIN Tauri APP ENTRY
+ *********************************************/
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .setup(|_| {
+            // Initialize the database asynchronously
             tauri::async_runtime::spawn(async {
-                if let Err(err) = init_db().await {
+                if let Err(err) = db::init_db().await {
                     eprintln!("Failed to initialize database: {:?}", err);
                 }
             });
             Ok(())
         })
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![greet, fetch_flashcards])
+        .invoke_handler(tauri::generate_handler![
+            // Buckets
+            create_bucket_command,
+            read_buckets_command,
+            update_bucket_command,
+            delete_bucket_command,
+
+            // Decks
+            create_deck_command,
+            read_decks_command,
+            update_deck_command,
+            delete_deck_command,
+
+            // Flashcards
+            create_flashcard_command,
+            read_flashcards_command,
+            update_flashcard_command,
+            delete_flashcard_command,
+
+            // Media
+            create_media_command,
+            read_media_command,
+            update_media_command,
+            delete_media_command,
+
+            // Sessions
+            create_session_command,
+            read_sessions_command,
+            update_session_command,
+            delete_session_command,
+
+            // Settings
+            create_setting_command,
+            read_settings_command,
+            update_setting_command,
+            delete_setting_command,
+
+            // Topics
+            create_topic_command,
+            read_topics_command,
+            update_topic_command,
+            delete_topic_command,
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
