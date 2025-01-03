@@ -1,96 +1,82 @@
 use leptos::*;
-use leptos_router::*;
-use crate::components::icons::{EditIcon, TrashIcon, DotsIcon};
-use serde_json::Value;
 use wasm_bindgen::prelude::*;
+use serde::{Deserialize, Serialize};
+use serde_wasm_bindgen::to_value;
 
 #[wasm_bindgen]
 extern "C" {
-    #[wasm_bindgen(js_namespace = ["window", "__TAURI__", "tauri"])]
+    #[wasm_bindgen(js_namespace = ["window", "__TAURI__", "invoke"])]
     async fn invoke(cmd: &str, args: JsValue) -> JsValue;
+}
+
+#[derive(Serialize, Deserialize)]
+struct CreateDeckArgs {
+    name: String,
+    created_date: String,
+    style: Option<String>,
 }
 
 #[component]
 pub fn DecksPage() -> impl IntoView {
-    // Reactive signal to store decks
-    let decks = create_resource(
-        || (), 
-        |_| async {
-            // Fetch decks from the backend using the Tauri command
-            let args = JsValue::from_serde(&Value::Null).unwrap();
-            let result = invoke("read_decks_command", args).await;
-            result.into_serde::<Vec<(i32, String, usize, usize)>>()
-                .unwrap_or_else(|_| vec![]) // Handle errors gracefully
-        }
-    );
+    let (decks, set_decks) = create_signal(Vec::<(i32, String, i32, String)>::new());
 
-    let navigate = use_navigate();
+    // Fetch decks from Tauri on load
+    create_effect(move |_| {
+        spawn_local(async move {
+            let response = invoke("read_decks_command", JsValue::NULL).await;
+            if let Ok(decks_data) = serde_wasm_bindgen::from_value::<Vec<(i32, String, i32, String)>>(response) {
+                set_decks.set(decks_data);
+            } else {
+                log::error!("Failed to fetch decks from Tauri.");
+            }
+        });
+    });
 
     view! {
-        <main class="container">
-            <div class="decks-header">
-                <h1>"Your Decks"</h1>
-            </div>
-
+        <div class="decks-page">
+            <h1>"Decks"</h1>
             <table class="decks-table">
                 <thead>
                     <tr>
                         <th>"Name"</th>
-                        <th>"Cards to Review"</th>
-                        <th>"Last Reviewed"</th>
-                        <th>"Progress"</th>
-                        <th>""</th> 
+                        <th>"# Cards Today"</th>
+                        <th>"Last Study"</th>
                     </tr>
                 </thead>
                 <tbody>
-                    // Use the resource signal to render the decks
-                    {move || decks().map(|decks| {
-                        decks.into_iter().map(|(id, name, cards_to_review, progress)| {
-                            let navigate_to_deck = {
-                                let navigate = navigate.clone();
-                                move |_| navigate(&format!("/deck/{}", id), Default::default())
-                            };
-
-                            view! {
-                                <tr class="clickable-row" on:click=navigate_to_deck>
-                                    <td>{name}</td>
-                                    <td>{cards_to_review}</td>
-                                    <td>"Today"</td>
-                                    <td>
-                                        <div class="progress-container">
-                                            {format!("{}%", progress)}
-                                            <div
-                                                class="progress-circle"
-                                                style={format!("--progress: {};", progress)}
-                                            ></div>
-                                        </div>
-                                    </td>
-                                    <td></td>
-                                </tr>
-                            }
-                        }).collect_view()
-                    })}
+                    {decks.get().iter().map(|(id, name, cards_to_study, last_study_date)| {
+                        view! {
+                            <tr>
+                                <td>
+                                    <a href=format!("/deck/{}", id)>
+                                        {name}
+                                    </a>
+                                </td>
+                                <td>{cards_to_study.to_string()}</td>
+                                <td>{last_study_date}</td>
+                            </tr>
+                        }
+                    }).collect_view()}
                 </tbody>
             </table>
-
-            <button class="create-button" on:click=move |_| {
-                spawn_local(async {
-                    let args = JsValue::from_serde(&serde_json::json!({
-                        "name": "New Deck",
-                        "created_date": "2025-01-01",
-                        "style": "default"
-                    })).unwrap();
-                    
-                    invoke("create_deck_command", args)
-                        .await
-                        .unwrap_or_else(|e| {
-                            log::error!("Failed to create deck: {}", e);
-                            JsValue::NULL
-                        });
+            <button on:click=move |_| {
+                spawn_local(async move {
+                    let args = CreateDeckArgs {
+                        name: "New Deck".to_string(),
+                        created_date: "2025-01-01".to_string(),
+                        style: None,
+                    };
+                    let args = to_value(&args).unwrap();
+                    let response = invoke("create_deck_command", args).await;
+                    if response.is_null() {
+                        log::info!("Deck added successfully.");
+                    } else {
+                        log::error!("Failed to add new deck.");
+                    }
                 });
             }>
-                "+"
+                "Add New Deck"
             </button>
-        </main>
+        </div>
     }
 }
