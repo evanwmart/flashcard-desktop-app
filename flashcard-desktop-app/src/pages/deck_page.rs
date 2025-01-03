@@ -1,148 +1,78 @@
 use leptos::*;
-use leptos_router::*;
-use crate::components::icons::{EditIcon, TrashIcon};
 use wasm_bindgen::prelude::*;
+use serde::{Deserialize, Serialize};
+use serde_wasm_bindgen::to_value;
 
 #[wasm_bindgen]
 extern "C" {
-    #[wasm_bindgen(js_namespace = ["window", "__TAURI__", "tauri"])]
+    #[wasm_bindgen(js_namespace = ["window", "__TAURI__", "invoke"])]
     async fn invoke(cmd: &str, args: JsValue) -> JsValue;
 }
 
-#[component]
-pub fn DeckPage() -> impl IntoView {
-    let params = use_params_map();
-    let deck_id = params.with(|p| p.get("deck_id").cloned().unwrap_or_else(|| "Unknown Deck".to_string()));
+#[derive(Serialize, Deserialize)]
+struct DeckIdArgs {
+    deck_id: String,
+}
 
-    // Reactive signal for flashcards
-    let flashcards = create_resource(
-        move || deck_id.clone(),
-        |deck_id| async move {
-            let args = JsValue::from_serde(&serde_json::json!({
-                "deck_id": deck_id.parse::<i32>().unwrap_or(0)
-            })).unwrap();
-            
-            let result = invoke("read_flashcards_command", args).await;
-            result.into_serde::<Vec<(i32, String, String)>>()
-                .unwrap_or_else(|_| vec![]) // Handle errors gracefully
+#[component]
+pub fn DeckPage(deck_id: String) -> impl IntoView {
+    let (deck_name, set_deck_name) = create_signal(String::new());
+    let (flashcards, set_flashcards) = create_signal(Vec::<(String, String)>::new());
+
+    // Fetch deck details and flashcards on load
+    create_effect({
+        let deck_id = deck_id.clone(); // Clone for this closure
+        move |_| {
+            let deck_id = deck_id.clone(); // Clone for async block
+            spawn_local(async move {
+                let args = to_value(&DeckIdArgs { deck_id: deck_id.clone() }).unwrap();
+                let name_response = invoke("read_deck_name_command", args.clone()).await;
+                if let Ok(deck_name_data) = serde_wasm_bindgen::from_value::<String>(name_response) {
+                    set_deck_name.set(deck_name_data);
+                }
+
+                let flashcards_response = invoke("read_flashcards_command", JsValue::from_bool(true)).await;
+                if let Ok(flashcards_data) = serde_wasm_bindgen::from_value::<Vec<(String, String)>>(flashcards_response) {
+                    set_flashcards.set(flashcards_data);
+                } else {
+                    log::error!("Failed to fetch flashcards.");
+                }
+            });
         }
-    );
+    });
 
     view! {
-        <main class="container">
-            <div class="deck-top-section">
-                <div class="deck-overview">
-                    <h1 class="deck-title">{deck_id}</h1>
-                    <button class="study-button">"Start Study Session"</button>
-                    <p class="last-reviewed">"Last Reviewed: Yesterday"</p>
-                    <div class="progress-container">
-                        <div class="progress-circle" style="--progress: 75;"></div>
-                        <span class="progress-text">"75% Complete"</span>
-                    </div>
-                </div>
-
-                <div class="deck-mindmap">
-                    <h2>"Knowledge Map"</h2>
-                    <div class="mindmap-placeholder">
-                        <p>"Mind map visualization goes here..."</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="deck-bottom-section">
-                <div class="table-header">
-                    <h2>"Flashcards"</h2>
-                    <button class="add-button" 
-                        on:click=move |_| {
-                            let deck_id = deck_id.clone();
-                            spawn_local(async move {
-                                let args = JsValue::from_serde(&serde_json::json!({
-                                    "deck_id": deck_id,
-                                    "html_front": "New Front",
-                                    "html_back": "New Back"
-                                })).unwrap();
-                                
-                                invoke("create_flashcard_command", args)
-                                    .await
-                                    .unwrap_or_else(|e| {
-                                        log::error!("Failed to create flashcard: {}", e);
-                                        JsValue::NULL
-                                    });
-                            });
+        <div class="deck-page">
+            <h1>{deck_name}</h1>
+            <div class="flashcards">
+                <h2>"Flashcards"</h2>
+                <ul>
+                    {flashcards.get().iter().map(|(front, back)| {
+                        view! {
+                            <li>
+                                <div class="flashcard">
+                                    <p><strong>"Front: "</strong>{front}</p>
+                                    <p><strong>"Back: "</strong>{back}</p>
+                                </div>
+                            </li>
                         }
-                    >
-                        "Add Flashcard"
-                    </button>
-                </div>
-
-                <div class="table-container">
-                    <table class="flashcards-table">
-                        <thead>
-                            <tr>
-                                <th>"Front"</th>
-                                <th>"Back"</th>
-                                <th>""</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {move || {
-                                flashcards.read().map(|cards| {
-                                    cards.into_iter().map(|(id, front, back)| {
-                                        view! {
-                                            <tr>
-                                                <td>{front}</td>
-                                                <td>{back}</td>
-                                                <td class="actions-cell">
-                                                    <button class="action-btn" 
-                                                        on:click=move |_| {
-                                                            let id = id;
-                                                            spawn_local(async move {
-                                                                let args = JsValue::from_serde(&serde_json::json!({
-                                                                    "id": id,
-                                                                    "html_front": "Updated Front",
-                                                                    "html_back": "Updated Back"
-                                                                })).unwrap();
-                                                                
-                                                                invoke("update_flashcard_command", args)
-                                                                    .await
-                                                                    .unwrap_or_else(|e| {
-                                                                        log::error!("Failed to update flashcard: {}", e);
-                                                                        JsValue::NULL
-                                                                    });
-                                                            });
-                                                        }
-                                                    >
-                                                        <EditIcon class=Some("icon") />
-                                                    </button>
-                                                    <button class="action-btn" 
-                                                        on:click=move |_| {
-                                                            let id = id;
-                                                            spawn_local(async move {
-                                                                let args = JsValue::from_serde(&serde_json::json!({
-                                                                    "id": id
-                                                                })).unwrap();
-                                                                
-                                                                invoke("delete_flashcard_command", args)
-                                                                    .await
-                                                                    .unwrap_or_else(|e| {
-                                                                        log::error!("Failed to delete flashcard: {}", e);
-                                                                        JsValue::NULL
-                                                                    });
-                                                            });
-                                                        }
-                                                    >
-                                                        <TrashIcon class=Some("icon") />
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        }
-                                    }).collect_view()
-                                })
-                            }}
-                        </tbody>
-                    </table>
-                </div>
+                    }).collect_view()}
+                </ul>
             </div>
-        </main>
+            <button on:click=move |_| {
+                let deck_id = deck_id.clone(); // Clone for async block
+                spawn_local(async move {
+                    let args = to_value(&DeckIdArgs { deck_id }).unwrap();
+                    let response = invoke("delete_deck_command", args).await;
+                    if response.is_null() {
+                        log::info!("Deck deleted successfully.");
+                    } else {
+                        log::error!("Failed to delete deck.");
+                    }
+                });
+            }>
+                "Delete Deck"
+            </button>
+        </div>
     }
 }
