@@ -1,26 +1,38 @@
 use leptos::*;
 use leptos_router::*;
 use crate::components::icons::{EditIcon, TrashIcon};
+use wasm_bindgen::prelude::*;
+
+#[wasm_bindgen]
+extern "C" {
+    #[wasm_bindgen(js_namespace = ["window", "__TAURI__", "tauri"])]
+    async fn invoke(cmd: &str, args: JsValue) -> JsValue;
+}
 
 #[component]
 pub fn DeckPage() -> impl IntoView {
     let params = use_params_map();
-    let deck_id = params.with(|p| p.get("deck_id").cloned());
+    let deck_id = params.with(|p| p.get("deck_id").cloned().unwrap_or_else(|| "Unknown Deck".to_string()));
 
-    let flashcards = vec![
-        ("What is Rust?", "A systems programming language."),
-        ("Ownership?", "A set of rules to manage memory."),
-        ("Lifetime?", "The scope for which a reference is valid."),
-    ];
+    // Reactive signal for flashcards
+    let flashcards = create_resource(
+        move || deck_id.clone(),
+        |deck_id| async move {
+            let args = JsValue::from_serde(&serde_json::json!({
+                "deck_id": deck_id.parse::<i32>().unwrap_or(0)
+            })).unwrap();
+            
+            let result = invoke("read_flashcards_command", args).await;
+            result.into_serde::<Vec<(i32, String, String)>>()
+                .unwrap_or_else(|_| vec![]) // Handle errors gracefully
+        }
+    );
 
     view! {
         <main class="container">
-
             <div class="deck-top-section">
                 <div class="deck-overview">
-                    <h1 class="deck-title">
-                        {deck_id.unwrap_or_else(|| "Unknown Deck".to_string())}
-                    </h1>
+                    <h1 class="deck-title">{deck_id}</h1>
                     <button class="study-button">"Start Study Session"</button>
                     <p class="last-reviewed">"Last Reviewed: Yesterday"</p>
                     <div class="progress-container">
@@ -40,8 +52,29 @@ pub fn DeckPage() -> impl IntoView {
             <div class="deck-bottom-section">
                 <div class="table-header">
                     <h2>"Flashcards"</h2>
-                    <button class="add-button">"Add Flashcard"</button>
+                    <button class="add-button" 
+                        on:click=move |_| {
+                            let deck_id = deck_id.clone();
+                            spawn_local(async move {
+                                let args = JsValue::from_serde(&serde_json::json!({
+                                    "deck_id": deck_id,
+                                    "html_front": "New Front",
+                                    "html_back": "New Back"
+                                })).unwrap();
+                                
+                                invoke("create_flashcard_command", args)
+                                    .await
+                                    .unwrap_or_else(|e| {
+                                        log::error!("Failed to create flashcard: {}", e);
+                                        JsValue::NULL
+                                    });
+                            });
+                        }
+                    >
+                        "Add Flashcard"
+                    </button>
                 </div>
+
                 <div class="table-container">
                     <table class="flashcards-table">
                         <thead>
@@ -52,27 +85,64 @@ pub fn DeckPage() -> impl IntoView {
                             </tr>
                         </thead>
                         <tbody>
-                            {flashcards.into_iter().map(|(front, back)| {
-                                view! {
-                                    <tr>
-                                        <td>{front}</td>
-                                        <td>{back}</td>
-                                        <td class="actions-cell">
-                                            <button class="action-btn">
-                                                <EditIcon class=Some("icon") />
-                                            </button>
-                                            <button class="action-btn">
-                                                <TrashIcon class=Some("icon") />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                }
-                            }).collect_view()}
+                            {move || {
+                                flashcards.read().map(|cards| {
+                                    cards.into_iter().map(|(id, front, back)| {
+                                        view! {
+                                            <tr>
+                                                <td>{front}</td>
+                                                <td>{back}</td>
+                                                <td class="actions-cell">
+                                                    <button class="action-btn" 
+                                                        on:click=move |_| {
+                                                            let id = id;
+                                                            spawn_local(async move {
+                                                                let args = JsValue::from_serde(&serde_json::json!({
+                                                                    "id": id,
+                                                                    "html_front": "Updated Front",
+                                                                    "html_back": "Updated Back"
+                                                                })).unwrap();
+                                                                
+                                                                invoke("update_flashcard_command", args)
+                                                                    .await
+                                                                    .unwrap_or_else(|e| {
+                                                                        log::error!("Failed to update flashcard: {}", e);
+                                                                        JsValue::NULL
+                                                                    });
+                                                            });
+                                                        }
+                                                    >
+                                                        <EditIcon class=Some("icon") />
+                                                    </button>
+                                                    <button class="action-btn" 
+                                                        on:click=move |_| {
+                                                            let id = id;
+                                                            spawn_local(async move {
+                                                                let args = JsValue::from_serde(&serde_json::json!({
+                                                                    "id": id
+                                                                })).unwrap();
+                                                                
+                                                                invoke("delete_flashcard_command", args)
+                                                                    .await
+                                                                    .unwrap_or_else(|e| {
+                                                                        log::error!("Failed to delete flashcard: {}", e);
+                                                                        JsValue::NULL
+                                                                    });
+                                                            });
+                                                        }
+                                                    >
+                                                        <TrashIcon class=Some("icon") />
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        }
+                                    }).collect_view()
+                                })
+                            }}
                         </tbody>
                     </table>
                 </div>
             </div>
-
         </main>
     }
 }
